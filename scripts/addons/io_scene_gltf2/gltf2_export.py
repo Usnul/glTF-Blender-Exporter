@@ -62,8 +62,7 @@ def finish(export_settings):
     bpy.context.scene.frame_set(export_settings['gltf_original_frame'])  
 
 
-def save(operator,
-         context,
+def save(context,
          export_settings):
     """
     Starts the glTF 2.0 export and saves to content either to a .gltf or .glb file.
@@ -81,7 +80,7 @@ def save(operator,
 
     glTF = {}
 
-    generate_glTF(operator, context, export_settings, glTF)
+    generate_glTF(context, export_settings, glTF)
 
     #
 

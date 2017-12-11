@@ -66,7 +66,6 @@ def generate_asset(export_settings,
 
 
 def generate_animations_parameter(
-        operator,
         context,
         export_settings,
         glTF,
@@ -194,8 +193,6 @@ def generate_animations_parameter(
 
             count = len(final_keys)
             sampler['input'] = create_accessor(
-                operator,
-                context,
                 export_settings,
                 glTF,
                 final_keys,
@@ -210,8 +207,6 @@ def generate_animations_parameter(
             count = len(values) // 3
 
             sampler['output'] = create_accessor(
-                operator,
-                context,
                 export_settings,
                 glTF,
                 values,
@@ -298,8 +293,6 @@ def generate_animations_parameter(
         count = len(final_keys)
 
         sampler['input'] = create_accessor(
-            operator,
-            context,
             export_settings,
             glTF,
             final_keys,
@@ -313,8 +306,6 @@ def generate_animations_parameter(
         count = len(values) // 4
 
         sampler['output'] = create_accessor(
-            operator,
-            context,
             export_settings,
             glTF,
             values,
@@ -396,8 +387,6 @@ def generate_animations_parameter(
             count = len(final_keys)
 
             sampler['input'] = create_accessor(
-                operator,
-                context,
                 export_settings,
                 glTF,
                 final_keys,
@@ -412,8 +401,6 @@ def generate_animations_parameter(
             count = len(values) // 3
 
             sampler['output'] = create_accessor(
-                operator,
-                context,
                 export_settings,
                 glTF,
                 values,
@@ -449,9 +436,7 @@ def generate_animations_parameter(
             if interpolation == 'CONVERSION_NEEDED':
                 sampler['interpolation'] = 'LINEAR'
 
-            value_data, in_tangent_data, out_tangent_data = animate_value(export_settings, value, interpolation,
-                                                                          node_type, used_node_name, matrix_correction,
-                                                                          matrix_basis)
+            value_data, in_tangent_data, out_tangent_data = animate_value(export_settings, value, interpolation)
 
             #
 
@@ -483,8 +468,6 @@ def generate_animations_parameter(
             count = len(final_keys)
 
             sampler['input'] = create_accessor(
-                operator,
-                context,
                 export_settings,
                 glTF,
                 final_keys,
@@ -499,8 +482,6 @@ def generate_animations_parameter(
             count = len(values)
 
             sampler['output'] = create_accessor(
-                operator,
-                context,
                 export_settings,
                 glTF,
                 values,
@@ -577,11 +558,11 @@ def generate_animations_parameter(
 
         write_transform_index += 1
 
+
 #
 # Property: animations
 #
-def generate_animations(operator,
-                        context,
+def generate_animations(context,
                         export_settings,
                         glTF):
     """
@@ -604,7 +585,6 @@ def generate_animations(operator,
         matrix_basis = mathutils.Matrix.Identity(4)
 
         generate_animations_parameter(
-            operator,
             context,
             export_settings,
             glTF,
@@ -671,7 +651,6 @@ def generate_animations(operator,
                     )
 
                     generate_animations_parameter(
-                        operator,
                         context,
                         export_settings,
                         glTF,
@@ -727,7 +706,7 @@ def generate_animations(operator,
         correction_matrix_local = mathutils.Matrix.Identity(4)
         matrix_basis = mathutils.Matrix.Identity(4)
 
-        generate_animations_parameter(operator, context, export_settings, glTF, blender_action, channels, samplers,
+        generate_animations_parameter(context, export_settings, glTF, blender_action, channels, samplers,
                                       blender_object.name, None, blender_object.rotation_mode, correction_matrix_local,
                                       matrix_basis, True)
 
@@ -922,9 +901,7 @@ def generate_cameras(export_settings, glTF):
         glTF['cameras'] = cameras
 
 
-def generate_lights_cmn(operator,
-                        context,
-                        export_settings,
+def generate_lights_cmn(export_settings,
                         glTF):
     """
     Generates the top level lights entry.
@@ -1025,8 +1002,8 @@ def generate_lights_cmn(operator,
     #
 
     if len(lights) > 0:
-        create_extensionsUsed(operator, context, export_settings, glTF, 'KHR_lights_cmn')
-        create_extensionsRequired(operator, context, export_settings, glTF, 'KHR_lights_cmn')
+        create_extensionsUsed(glTF, 'KHR_lights_cmn')
+        create_extensionsRequired(glTF, 'KHR_lights_cmn')
 
         if glTF.get('extensions') is None:
             glTF['extensions'] = {}
@@ -1038,9 +1015,7 @@ def generate_lights_cmn(operator,
         }
 
 
-def generate_lights_pbr(operator,
-                        context,
-                        export_settings,
+def generate_lights_pbr(export_settings,
                         glTF):
     """
     Generates the top level lights entry.
@@ -1122,8 +1097,8 @@ def generate_lights_pbr(operator,
     #
 
     if len(lights) > 0:
-        create_extensionsUsed(operator, context, export_settings, glTF, 'KHR_lights_pbr')
-        create_extensionsRequired(operator, context, export_settings, glTF, 'KHR_lights_pbr')
+        create_extensionsUsed(glTF, 'KHR_lights_pbr')
+        create_extensionsRequired(glTF, 'KHR_lights_pbr')
 
         if glTF.get('extensions') is None:
             glTF['extensions'] = {}
@@ -1135,8 +1110,7 @@ def generate_lights_pbr(operator,
         }
 
 
-def generate_meshes(operator,
-                    context,
+def generate_meshes(context,
                     export_settings,
                     glTF):
     """
@@ -1154,7 +1128,7 @@ def generate_meshes(operator,
 
     for name, blender_mesh in filtered_meshes.items():
 
-        internal_primitives = extract_primitives(glTF, blender_mesh, filtered_vertex_groups[name], export_settings)
+        internal_primitives = extract_primitives(blender_mesh, filtered_vertex_groups[name], export_settings)
 
         if len(internal_primitives) == 0:
             continue
@@ -1197,8 +1171,6 @@ def generate_meshes(operator,
 
             indices = internal_primitive['indices']
 
-            componentType = GLTF_COMPONENT_TYPE_UNSIGNED_BYTE
-
             max_index = max(indices)
 
             if max_index < 256:
@@ -1216,10 +1188,8 @@ def generate_meshes(operator,
 
             count = len(indices)
 
-            type = GLTF_DATA_TYPE_SCALAR
-
-            indices_index = create_accessor(operator, context, export_settings, glTF, indices, componentType, count,
-                                            type, "ELEMENT_ARRAY_BUFFER")
+            indices_index = create_accessor(export_settings, glTF, indices, componentType, count,
+                                            GLTF_DATA_TYPE_SCALAR, "ELEMENT_ARRAY_BUFFER")
 
             if indices_index < 0:
                 print_console('ERROR', 'Could not create accessor for indices')
@@ -1241,12 +1211,17 @@ def generate_meshes(operator,
 
             internal_position = internal_attributes['POSITION']
 
-            componentType = GLTF_COMPONENT_TYPE_FLOAT
-
             count = len(internal_position) // 3
 
-            position = create_accessor(operator, context, export_settings, glTF, internal_position, componentType,
-                                       count, GLTF_DATA_TYPE_VEC3, "ARRAY_BUFFER")
+            position = create_accessor(
+                export_settings,
+                glTF,
+                internal_position,
+                GLTF_COMPONENT_TYPE_FLOAT,
+                count,
+                GLTF_DATA_TYPE_VEC3,
+                "ARRAY_BUFFER"
+            )
 
             if position < 0:
                 print_console('ERROR', 'Could not create accessor for position')
@@ -1261,9 +1236,15 @@ def generate_meshes(operator,
 
                 count = len(internal_normal) // 3
 
-                normal = create_accessor(operator, context, export_settings, glTF, internal_normal,
-                                         GLTF_COMPONENT_TYPE_FLOAT,
-                                         count, GLTF_DATA_TYPE_VEC3, "ARRAY_BUFFER")
+                normal = create_accessor(
+                    export_settings,
+                    glTF,
+                    internal_normal,
+                    GLTF_COMPONENT_TYPE_FLOAT,
+                    count,
+                    GLTF_DATA_TYPE_VEC3,
+                    "ARRAY_BUFFER"
+                )
 
                 if normal < 0:
                     print_console('ERROR', 'Could not create accessor for normal')
@@ -1279,9 +1260,15 @@ def generate_meshes(operator,
 
                     count = len(internal_tangent) // 4
 
-                    tangent = create_accessor(operator, context, export_settings, glTF, internal_tangent,
-                                              GLTF_COMPONENT_TYPE_FLOAT,
-                                              count, GLTF_DATA_TYPE_VEC4, "ARRAY_BUFFER")
+                    tangent = create_accessor(
+                        export_settings,
+                        glTF,
+                        internal_tangent,
+                        GLTF_COMPONENT_TYPE_FLOAT,
+                        count,
+                        GLTF_DATA_TYPE_VEC4,
+                        "ARRAY_BUFFER"
+                    )
 
                     if tangent < 0:
                         print_console('ERROR', 'Could not create accessor for tangent')
@@ -1303,9 +1290,15 @@ def generate_meshes(operator,
 
                         count = len(internal_texcoord) // 2
 
-                        texcoord = create_accessor(operator, context, export_settings, glTF, internal_texcoord,
-                                                   GLTF_COMPONENT_TYPE_FLOAT, count, GLTF_DATA_TYPE_VEC2,
-                                                   "ARRAY_BUFFER")
+                        texcoord = create_accessor(
+                            export_settings,
+                            glTF,
+                            internal_texcoord,
+                            GLTF_COMPONENT_TYPE_FLOAT,
+                            count,
+                            GLTF_DATA_TYPE_VEC2,
+                            "ARRAY_BUFFER"
+                        )
 
                         if texcoord < 0:
                             process_texcoord = False
@@ -1332,9 +1325,15 @@ def generate_meshes(operator,
 
                         count = len(internal_color) // 4
 
-                        color = create_accessor(operator, context, export_settings, glTF, internal_color,
-                                                GLTF_COMPONENT_TYPE_FLOAT,
-                                                count, GLTF_DATA_TYPE_VEC4, "ARRAY_BUFFER")
+                        color = create_accessor(
+                            export_settings,
+                            glTF,
+                            internal_color,
+                            GLTF_COMPONENT_TYPE_FLOAT,
+                            count,
+                            GLTF_DATA_TYPE_VEC4,
+                            "ARRAY_BUFFER"
+                        )
 
                         if color < 0:
                             process_color = False
@@ -1362,9 +1361,15 @@ def generate_meshes(operator,
 
                         count = len(internal_joint) // 4
 
-                        joint = create_accessor(operator, context, export_settings, glTF, internal_joint,
-                                                GLTF_COMPONENT_TYPE_UNSIGNED_SHORT,
-                                                count, GLTF_DATA_TYPE_VEC4, "ARRAY_BUFFER")
+                        joint = create_accessor(
+                            export_settings,
+                            glTF,
+                            internal_joint,
+                            GLTF_COMPONENT_TYPE_UNSIGNED_SHORT,
+                            count,
+                            GLTF_DATA_TYPE_VEC4,
+                            "ARRAY_BUFFER"
+                        )
 
                         if joint < 0:
                             process_bone = False
@@ -1381,8 +1386,6 @@ def generate_meshes(operator,
                         count = len(internal_weight) // 4
 
                         weight = create_accessor(
-                            operator,
-                            context,
                             export_settings,
                             glTF,
                             internal_weight,
@@ -1426,8 +1429,6 @@ def generate_meshes(operator,
                                 count = len(internal_target_position) // 3
 
                                 target_position = create_accessor(
-                                    operator,
-                                    context,
                                     export_settings,
                                     glTF,
                                     internal_target_position,
@@ -1457,8 +1458,6 @@ def generate_meshes(operator,
                                     count = len(internal_target_normal) // 3
 
                                     target_normal = create_accessor(
-                                        operator,
-                                        context,
                                         export_settings,
                                         glTF,
                                         internal_target_normal,
@@ -1482,15 +1481,15 @@ def generate_meshes(operator,
 
                                     count = len(internal_target_tangent) // 3
 
-                                    target_tangent = create_accessor(operator,
-                                                                     context,
-                                                                     export_settings,
-                                                                     glTF,
-                                                                     internal_target_tangent,
-                                                                     GLTF_COMPONENT_TYPE_FLOAT,
-                                                                     count,
-                                                                     GLTF_DATA_TYPE_VEC3,
-                                                                     "")
+                                    target_tangent = create_accessor(
+                                        export_settings,
+                                        glTF,
+                                        internal_target_tangent,
+                                        GLTF_COMPONENT_TYPE_FLOAT,
+                                        count,
+                                        GLTF_DATA_TYPE_VEC3,
+                                        ""
+                                    )
 
                                     if target_tangent < 0:
                                         print_console('ERROR', 'Could not create accessor for ' + target_tangent_id)
@@ -1605,7 +1604,6 @@ def generate_dublicate_mesh(glTF, blender_object):
 
 
 def generate_node_parameter(
-        export_settings,
         matrix,
         node,
         node_type
@@ -1614,7 +1612,7 @@ def generate_node_parameter(
     Helper function for storing node parameters.
     """
 
-    translation, rotation, scale = decompose_transition(matrix, node_type, export_settings)
+    translation, rotation, scale = decompose_transition(matrix, node_type)
 
     #
 
@@ -1653,7 +1651,7 @@ def generate_node_instance(context,
     #
     #
 
-    generate_node_parameter(context, blender_object.matrix_local, node, 'NODE')
+    generate_node_parameter(blender_object.matrix_local, node, 'NODE')
 
     #
     #
@@ -1756,8 +1754,7 @@ def generate_node_instance(context,
     return node
 
 
-def generate_nodes(operator,
-                   context,
+def generate_nodes(context,
                    export_settings,
                    glTF):
     """
@@ -1880,7 +1877,7 @@ def generate_nodes(operator,
                             matrix_basis = blender_object.convert_space(blender_bone, blender_bone.matrix,
                                                                         from_space='POSE', to_space='LOCAL')
 
-                        generate_node_parameter(context, correction_matrix_local * matrix_basis, node, 'JOINT')
+                        generate_node_parameter(correction_matrix_local * matrix_basis, node, 'JOINT')
 
                         #
 
@@ -1920,11 +1917,8 @@ def generate_nodes(operator,
 
                 #
                 count = len(inverse_matrices) // 16
-                type = "MAT4"
 
                 inverseBindMatrices = create_accessor(
-                    operator,
-                    context,
                     export_settings,
                     glTF,
                     inverse_matrices,
@@ -2102,8 +2096,7 @@ def generate_nodes(operator,
             node['children'] = children
 
 
-def generate_images(operator,
-                    context,
+def generate_images(context,
                     export_settings,
                     glTF):
     """
@@ -2156,7 +2149,7 @@ def generate_images(operator,
 
             png_data = create_png_data(blender_image)
 
-            bufferView = create_bufferView(operator, context, export_settings, glTF, png_data, 0, 0)
+            bufferView = create_bufferView(export_settings, glTF, png_data, 0, 0)
 
             # Required
 
@@ -2178,9 +2171,7 @@ def generate_images(operator,
         glTF['images'] = images
 
 
-def generate_textures(operator,
-                      context,
-                      export_settings,
+def generate_textures(export_settings,
                       glTF):
     """
     Generates the top level textures entry.
@@ -2210,7 +2201,7 @@ def generate_textures(operator,
             if blender_texture.extension == 'CLIP':
                 wrap = 33071
 
-            texture['sampler'] = create_sampler(operator, context, export_settings, glTF, magFilter, wrap)
+            texture['sampler'] = create_sampler(glTF, magFilter, wrap)
 
             texture['source'] = get_image_index(export_settings, get_uri(blender_texture.image.filepath))
 
@@ -2225,7 +2216,7 @@ def generate_textures(operator,
             if blender_texture.texture.extension == 'CLIP':
                 wrap = 33071
 
-            texture['sampler'] = create_sampler(operator, context, export_settings, glTF, magFilter, wrap)
+            texture['sampler'] = create_sampler(glTF, magFilter, wrap)
 
             texture['source'] = get_image_index(export_settings, get_uri(blender_texture.texture.image.filepath))
 
@@ -2241,9 +2232,7 @@ def generate_textures(operator,
         glTF['textures'] = textures
 
 
-def generate_materials(operator,
-                       context,
-                       export_settings,
+def generate_materials(export_settings,
                        glTF):
     """
     Generates the top level materials entry.
@@ -2298,7 +2287,7 @@ def generate_materials(operator,
                                 'index': index
                             }
 
-                            texCoord = get_texcoord_index(glTF, 'BaseColor', blender_node)
+                            texCoord = get_texcoord_index('BaseColor', blender_node)
                             if texCoord > 0:
                                 baseColorTexture['texCoord'] = texCoord
 
@@ -2337,7 +2326,7 @@ def generate_materials(operator,
                                 'index': index
                             }
 
-                            texCoord = get_texcoord_index(glTF, 'MetallicRoughness', blender_node)
+                            texCoord = get_texcoord_index('MetallicRoughness', blender_node)
                             if texCoord > 0:
                                 metallicRoughnessTexture['texCoord'] = texCoord
 
@@ -2363,7 +2352,7 @@ def generate_materials(operator,
                                 'index': index
                             }
 
-                            texCoord = get_texcoord_index(glTF, 'Diffuse', blender_node)
+                            texCoord = get_texcoord_index('Diffuse', blender_node)
                             if texCoord > 0:
                                 diffuseTexture['texCoord'] = texCoord
 
@@ -2389,7 +2378,7 @@ def generate_materials(operator,
                                 'index': index_a
                             }
 
-                            texCoord = get_texcoord_index(glTF, 'Specular', blender_node)
+                            texCoord = get_texcoord_index('Specular', blender_node)
                             if texCoord > 0:
                                 specularGlossinessTexture['texCoord'] = texCoord
 
@@ -2420,7 +2409,7 @@ def generate_materials(operator,
                             'index': index
                         }
 
-                        texCoord = get_texcoord_index(glTF, 'Emissive', blender_node)
+                        texCoord = get_texcoord_index('Emissive', blender_node)
                         if texCoord > 0:
                             emissiveTexture['texCoord'] = texCoord
 
@@ -2442,7 +2431,7 @@ def generate_materials(operator,
                             'index': index
                         }
 
-                        texCoord = get_texcoord_index(glTF, 'Normal', blender_node)
+                        texCoord = get_texcoord_index('Normal', blender_node)
                         if texCoord > 0:
                             normalTexture['texCoord'] = texCoord
 
@@ -2463,7 +2452,7 @@ def generate_materials(operator,
                                 'index': index
                             }
 
-                            texCoord = get_texcoord_index(glTF, 'Occlusion', blender_node)
+                            texCoord = get_texcoord_index('Occlusion', blender_node)
                             if texCoord > 0:
                                 occlusionTexture['texCoord'] = texCoord
 
@@ -2808,16 +2797,16 @@ def generate_materials(operator,
 
     if len(materials) > 0:
         if KHR_materials_pbrSpecularGlossiness_Used:
-            create_extensionsUsed(operator, context, export_settings, glTF, 'KHR_materials_pbrSpecularGlossiness')
-            create_extensionsRequired(operator, context, export_settings, glTF, 'KHR_materials_pbrSpecularGlossiness')
+            create_extensionsUsed(glTF, 'KHR_materials_pbrSpecularGlossiness')
+            create_extensionsRequired(glTF, 'KHR_materials_pbrSpecularGlossiness')
 
         if KHR_materials_common_Used:
-            create_extensionsUsed(operator, context, export_settings, glTF, 'KHR_materials_cmnBlinnPhong')
-            create_extensionsRequired(operator, context, export_settings, glTF, 'KHR_materials_cmnBlinnPhong')
+            create_extensionsUsed(glTF, 'KHR_materials_cmnBlinnPhong')
+            create_extensionsRequired(glTF, 'KHR_materials_cmnBlinnPhong')
 
         if KHR_materials_displacement_Used:
-            create_extensionsUsed(operator, context, export_settings, glTF, 'KHR_materials_displacement')
-            create_extensionsRequired(operator, context, export_settings, glTF, 'KHR_materials_displacement')
+            create_extensionsUsed(glTF, 'KHR_materials_displacement')
+            create_extensionsRequired(glTF, 'KHR_materials_displacement')
 
         glTF['materials'] = materials
 
@@ -2902,8 +2891,7 @@ def generate_scene(glTF):
         glTF['scene'] = index
 
 
-def generate_glTF(operator,
-                  context,
+def generate_glTF(context,
                   export_settings,
                   glTF):
     """
@@ -2919,17 +2907,17 @@ def generate_glTF(operator,
 
     if export_settings['gltf_materials']:
         profile_start()
-        generate_images(operator, context, export_settings, glTF)
+        generate_images(context, export_settings, glTF)
         profile_end('images')
         bpy.context.window_manager.progress_update(10)
 
         profile_start()
-        generate_textures(operator, context, export_settings, glTF)
+        generate_textures(export_settings, glTF)
         profile_end('textures')
         bpy.context.window_manager.progress_update(20)
 
         profile_start()
-        generate_materials(operator, context, export_settings, glTF)
+        generate_materials(export_settings, glTF)
         profile_end('materials')
         bpy.context.window_manager.progress_update(30)
 
@@ -2945,13 +2933,13 @@ def generate_glTF(operator,
 
     if export_settings['gltf_lights_cmn']:
         profile_start()
-        generate_lights_cmn(operator, context, export_settings, glTF)
+        generate_lights_cmn(context, glTF)
         profile_end('lights cmn')
         bpy.context.window_manager.progress_update(50)
 
     if export_settings['gltf_lights_pbr']:
         profile_start()
-        generate_lights_pbr(operator, context, export_settings, glTF)
+        generate_lights_pbr(context, glTF)
         profile_end('lights pbr')
         bpy.context.window_manager.progress_update(50)
 
@@ -2960,14 +2948,14 @@ def generate_glTF(operator,
     #
 
     profile_start()
-    generate_meshes(operator, context, export_settings, glTF)
+    generate_meshes(context, export_settings, glTF)
     profile_end('meshes')
     bpy.context.window_manager.progress_update(60)
 
     #
 
     profile_start()
-    generate_nodes(operator, context, export_settings, glTF)
+    generate_nodes(context, export_settings, glTF)
     profile_end('nodes')
     bpy.context.window_manager.progress_update(70)
 
@@ -2975,7 +2963,7 @@ def generate_glTF(operator,
 
     if export_settings['gltf_animations']:
         profile_start()
-        generate_animations(operator, context, export_settings, glTF)
+        generate_animations(context, export_settings, glTF)
         profile_end('animations')
         bpy.context.window_manager.progress_update(80)
 

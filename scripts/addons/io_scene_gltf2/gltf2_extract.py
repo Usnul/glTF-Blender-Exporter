@@ -64,7 +64,7 @@ def convert_swizzle_scale(scale):
     return mathutils.Vector((scale[0], scale[2], scale[1]))
 
 
-def decompose_transition(matrix, context, export_settings):
+def decompose_transition(matrix, context):
     translation, rotation, scale = matrix.decompose()
     """
     Decompose a matrix depending if it is associated to a joint or node.
@@ -363,7 +363,7 @@ def extract_primitive_pack(a, indices, use_tangents):
     return result_primitive     
 
     
-def extract_primitives(glTF, blender_mesh, blender_vertex_groups, export_settings):
+def extract_primitives(blender_mesh, blender_vertex_groups, export_settings):
     """
     Extracting primitives from a mesh. Polygons are triangulated and sorted by material.
     Furthermore, primitives are splitted up, if the indices range is exceeded.
@@ -448,8 +448,7 @@ def extract_primitives(glTF, blender_mesh, blender_vertex_groups, export_setting
     #
     
     vertex_colors = {}
-    
-    color_max = 0
+
     color_index = 0
     for vertex_color in blender_mesh.vertex_colors:
         vertex_color_name = 'COLOR_' + str(color_index)
@@ -492,7 +491,7 @@ def extract_primitives(glTF, blender_mesh, blender_vertex_groups, export_setting
         export_color = True
         
         #
-        
+
         primitive = None
         vertex_index_to_new_indices = None
         if blender_polygon.material_index < 0 or blender_polygon.material_index >= len(blender_mesh.materials) or blender_mesh.materials[blender_polygon.material_index] is None:

@@ -191,7 +191,7 @@ def get_texture_index(export_settings, glTF, name, shader_node_group):
     return get_texture_index_by_filepath(export_settings, glTF, from_node.image.filepath)
 
 
-def get_texcoord_index(glTF, name, shader_node_group):
+def get_texcoord_index(name, shader_node_group):
     """
     Return the texture coordinate index, if assigend and used.
     """

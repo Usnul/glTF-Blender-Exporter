@@ -505,7 +505,7 @@ def animate_scale(export_settings, scale, interpolation, node_type, node_name, m
     return result, result_in_tangent, result_out_tangent
 
 
-def animate_value(export_settings, value_parameter, interpolation, node_type, node_name, matrix_correction, matrix_basis):
+def animate_value(export_settings, value_parameter, interpolation):
     """
     Calculates/gathers the key value pairs for scalar anaimations.
     """

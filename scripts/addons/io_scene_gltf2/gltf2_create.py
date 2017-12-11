@@ -44,10 +44,7 @@ def is_json(data):
         return False
 
 
-def create_extensionsUsed(operator,
-                          context,
-                          export_settings,
-                          glTF, extension):
+def create_extensionsUsed(glTF, extension):
     """
     Creates and assigns the 'extensionsUsed' property.
     """
@@ -61,10 +58,7 @@ def create_extensionsUsed(operator,
         extensionsUsed.append(extension)
 
 
-def create_extensionsRequired(operator,
-                              context,
-                              export_settings,
-                              glTF, extension):
+def create_extensionsRequired(glTF, extension):
     """
     Creates and assigns the 'extensionsRequired' property.
     """
@@ -78,10 +72,7 @@ def create_extensionsRequired(operator,
         extensionsRequired.append(extension)
 
 
-def create_sampler(operator,
-                   context,
-                   export_settings,
-                   glTF, magFilter, wrap):
+def create_sampler(glTF, magFilter, wrap):
     """
     Creates and appends a sampler with the given parameters.
     """
@@ -132,8 +123,6 @@ def create_sampler(operator,
 
 
 def create_bufferView(
-        operator,
-        context,
         export_settings,
         glTF,
         data_buffer,
@@ -203,8 +192,6 @@ def create_bufferView(
 
 
 def create_accessor(
-        operator,
-        context,
         export_settings,
         glTF,
         data,
@@ -306,7 +293,7 @@ def create_accessor(
 
     data_buffer = struct.pack(convert_type, *data)
 
-    buffer_view = create_bufferView(operator, context, export_settings, glTF, data_buffer, target, convert_type_size)
+    buffer_view = create_bufferView(export_settings, glTF, data_buffer, target, convert_type_size)
 
     if buffer_view < 0:
         print_console('ERROR', 'Invalid buffer view')
