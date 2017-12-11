@@ -66,7 +66,6 @@ def generate_asset(export_settings,
 
 
 def generate_animations_parameter(
-        context,
         export_settings,
         glTF,
         action,
@@ -562,8 +561,7 @@ def generate_animations_parameter(
 #
 # Property: animations
 #
-def generate_animations(context,
-                        export_settings,
+def generate_animations(export_settings,
                         glTF):
     """
     Generates the top level animations, channels and samplers entry.
@@ -585,7 +583,6 @@ def generate_animations(context,
         matrix_basis = mathutils.Matrix.Identity(4)
 
         generate_animations_parameter(
-            context,
             export_settings,
             glTF,
             blender_action,
@@ -651,7 +648,6 @@ def generate_animations(context,
                     )
 
                     generate_animations_parameter(
-                        context,
                         export_settings,
                         glTF,
                         blender_action,
@@ -706,7 +702,7 @@ def generate_animations(context,
         correction_matrix_local = mathutils.Matrix.Identity(4)
         matrix_basis = mathutils.Matrix.Identity(4)
 
-        generate_animations_parameter(context, export_settings, glTF, blender_action, channels, samplers,
+        generate_animations_parameter(export_settings, glTF, blender_action, channels, samplers,
                                       blender_object.name, None, blender_object.rotation_mode, correction_matrix_local,
                                       matrix_basis, True)
 
@@ -1110,8 +1106,7 @@ def generate_lights_pbr(export_settings,
         }
 
 
-def generate_meshes(context,
-                    export_settings,
+def generate_meshes(export_settings,
                     glTF):
     """
     Generates the top level meshes entry.
@@ -1630,12 +1625,13 @@ def generate_node_parameter(
         node['scale'] = [scale[0], scale[1], scale[2]]
 
 
-def generate_node_instance(context,
-                           export_settings,
-                           glTF,
-                           nodes,
-                           blender_object,
-                           force_visible):
+def generate_node_instance(
+        export_settings,
+        glTF,
+        nodes,
+        blender_object,
+        force_visible
+):
     """
     Helper function for storing node instances.
     """
@@ -1675,7 +1671,7 @@ def generate_node_instance(context,
                             break
 
                 if need_dublicate:
-                    mesh = generate_dublicate_mesh(context, glTF)
+                    mesh = generate_dublicate_mesh(glTF, blender_object)
 
                 #
 
@@ -1754,9 +1750,10 @@ def generate_node_instance(context,
     return node
 
 
-def generate_nodes(context,
-                   export_settings,
-                   glTF):
+def generate_nodes(
+        export_settings,
+        glTF
+):
     """
     Generates the top level nodes entry.
     """
@@ -1771,7 +1768,7 @@ def generate_nodes(context,
     filtered_objects = export_settings['filtered_objects']
 
     for blender_object in filtered_objects:
-        node = generate_node_instance(context, export_settings, glTF, nodes, blender_object, False)
+        node = generate_node_instance(export_settings, glTF, nodes, blender_object, False)
 
         #
         #
@@ -1787,7 +1784,7 @@ def generate_nodes(context,
             if export_settings['gltf_layers'] or (blender_object.layers[0] and blender_object.dupli_group.layers[0]):
 
                 for blender_dupli_object in blender_object.dupli_group.objects:
-                    node = generate_node_instance(context, export_settings, glTF, nodes, blender_dupli_object,
+                    node = generate_node_instance(export_settings, glTF, nodes, blender_dupli_object,
                                                   True)
 
                     node['name'] = 'Duplication_' + blender_object.name + '_' + blender_dupli_object.name
@@ -2933,13 +2930,13 @@ def generate_glTF(context,
 
     if export_settings['gltf_lights_cmn']:
         profile_start()
-        generate_lights_cmn(context, glTF)
+        generate_lights_cmn(export_settings, glTF)
         profile_end('lights cmn')
         bpy.context.window_manager.progress_update(50)
 
     if export_settings['gltf_lights_pbr']:
         profile_start()
-        generate_lights_pbr(context, glTF)
+        generate_lights_pbr(export_settings, glTF)
         profile_end('lights pbr')
         bpy.context.window_manager.progress_update(50)
 
@@ -2948,14 +2945,14 @@ def generate_glTF(context,
     #
 
     profile_start()
-    generate_meshes(context, export_settings, glTF)
+    generate_meshes(export_settings, glTF)
     profile_end('meshes')
     bpy.context.window_manager.progress_update(60)
 
     #
 
     profile_start()
-    generate_nodes(context, export_settings, glTF)
+    generate_nodes(export_settings, glTF)
     profile_end('nodes')
     bpy.context.window_manager.progress_update(70)
 
@@ -2963,7 +2960,7 @@ def generate_glTF(context,
 
     if export_settings['gltf_animations']:
         profile_start()
-        generate_animations(context, export_settings, glTF)
+        generate_animations(export_settings, glTF)
         profile_end('animations')
         bpy.context.window_manager.progress_update(80)
 
