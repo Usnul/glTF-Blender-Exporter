@@ -28,7 +28,6 @@ from .gltf2_extract import *
 from .gltf2_filter import *
 from .gltf2_get import *
 
-
 #
 # Globals
 #
@@ -80,6 +79,7 @@ def generate_animations_parameter(
 ):
     """
     Helper function for storing animation parameters.
+    :type is_morph_data: bool
     """
 
     name = blender_node_name
@@ -558,26 +558,74 @@ def generate_animations_parameter(
         write_transform_index += 1
 
 
+def _can_object_use_action(obj, action):
+    # Borrowed from git@github.com:Kupoman/blendergltf.git
+    for fcurve in action.fcurves:
+        path = fcurve.data_path
+        if not path.startswith('pose'):
+            return obj.animation_data is not None
+
+        if obj.type == 'ARMATURE':
+            path = path.split('["')[-1]
+            path = path.split('"]')[0]
+            if path in [bone.name for bone in obj.data.bones]:
+                return True
+
+    return False
+
+
 #
 # Property: animations
 #
-def generate_animations(export_settings,
-                        glTF):
+def generate_animations(
+        export_settings,
+        glTF
+):
     """
     Generates the top level animations, channels and samplers entry.
     """
 
-    def process_object_animations(blender_object):
-        if blender_object.animation_data is None:
+    all_blender_actions = bpy.data.actions
+
+    def process_morph_animation(blender_object, channels, samplers, correction_matrix_local, matrix_basis):
+        blender_mesh = blender_object.data
+
+        if blender_mesh in processed_meshes:
             return
 
-        blender_action = blender_object.animation_data.action
+        if blender_mesh.shape_keys is None or blender_mesh.shape_keys.animation_data is None:
+            return
+
+        blender_action = blender_mesh.shape_keys.animation_data.action
 
         if blender_action is None:
             return
 
-        #
-        #
+        generate_animations_parameter(
+            export_settings,
+            glTF,
+            blender_action,
+            channels,
+            samplers,
+            blender_object.name,
+            None,
+            blender_object.rotation_mode,
+            correction_matrix_local,
+            matrix_basis,
+            True
+        )
+
+        processed_meshes.append(blender_mesh)
+
+    def process_object_animation(blender_object, blender_action):
+        channels = []
+
+        samplers = []
+
+        # remember current frame and action
+        scene = bpy.context.scene
+        old_frame = scene.frame_current
+        old_action = blender_object.animation_data.action
 
         correction_matrix_local = mathutils.Matrix.Identity(4)
         matrix_basis = mathutils.Matrix.Identity(4)
@@ -661,11 +709,36 @@ def generate_animations(export_settings,
                         False
                     )
 
+        if len(channels) > 0 or len(samplers) > 0:
+
+            # Sampler 'name' is used to gather the index. However, 'name' is no property of sampler and has to be removed.
+            for sampler in samplers:
+                del sampler['name']
+
+            #
+
+        # Export morph targets animation data.
+        if blender_object.type == 'MESH' and blender_object.data is not None:
+            process_morph_animation(blender_object, channels, samplers, correction_matrix_local, matrix_basis)
+
+        animation = {
+            'name': blender_action.name,
+            'channels': channels,
+            'samplers': samplers
+        }
+
+        # restore scene
+        scene.frame_set(old_frame)
+        blender_object.animation_data.action = old_action
+
+        return animation
+
     animations = []
 
-    channels = []
-
-    samplers = []
+    def process_object_animations(blender_object, actions):
+        for blender_action in actions:
+            animation = process_object_animation(blender_object, blender_action)
+            animations.append(animation)
 
     #
     #
@@ -685,36 +758,11 @@ def generate_animations(export_settings,
 
     processed_meshes = []
 
-    def process_mesh_object(blender_object):
-        blender_mesh = blender_object.data
-
-        if blender_mesh in processed_meshes:
-            return
-
-        if blender_mesh.shape_keys is None or blender_mesh.shape_keys.animation_data is None:
-            return
-
-        blender_action = blender_mesh.shape_keys.animation_data.action
-
-        if blender_action is None:
-            return
-
-        correction_matrix_local = mathutils.Matrix.Identity(4)
-        matrix_basis = mathutils.Matrix.Identity(4)
-
-        generate_animations_parameter(export_settings, glTF, blender_action, channels, samplers,
-                                      blender_object.name, None, blender_object.rotation_mode, correction_matrix_local,
-                                      matrix_basis, True)
-
-        processed_meshes.append(blender_mesh)
-
     for blender_object in filtered_objects:
-        process_object_animations(blender_object)
-        # Export morph targets animation data.
-        if blender_object.type != 'MESH' or blender_object.data is None:
-            continue
-        process_mesh_object(blender_object)
+        object_actions = [action for action in all_blender_actions if _can_object_use_action(blender_object, action)]
+        process_object_animations(blender_object, object_actions)
 
+    # Restore actions after baking
     if export_settings['gltf_bake_skins']:
         for blender_object in filtered_objects:
             if blender_backup_action.get(blender_object.name) is not None:
@@ -722,21 +770,6 @@ def generate_animations(export_settings,
 
     #
     #
-
-    if len(channels) > 0 or len(samplers) > 0:
-
-        # Sampler 'name' is used to gather the index. However, 'name' is no property of sampler and has to be removed.
-        for sampler in samplers:
-            del sampler['name']
-
-        #
-
-        animation = {
-            'channels': channels,
-            'samplers': samplers
-        }
-
-        animations.append(animation)
 
     #
     #
